@@ -15,6 +15,7 @@ class Neuron:
         self.bias = np.zeros(1)
         self.delta = 1.0 # This is used for calculating the error
         self.output = 1.0 # This is also used for calculating the error
+        self.input = 1.0 # This is also used for calculating the error
 
     def activate(self, x: np.matrix) -> np.matrix:
         y = np.dot(x, self.weights)
@@ -57,21 +58,36 @@ class NeuralNetwork:
         self.layers.append(output_layer)
 
     def predict(self, x) -> list:
-        Z_predicted = x
+        result = []
+        current_x = x
+        debug_inputs = [] # DEBUG
 
         # Calculating with Hidden Layers
         for layer_index in range(self.num_layers):
+            debug_inputs_current_layer = [] # DEBUG
             for width_index in range(self.width):  
                 neuron = self.layers[layer_index][width_index]
-                Z = neuron.activate(Z_predicted)
-                Z_predicted[width_index] = Z
+                neuron.input = current_x
+                Z = neuron.activate(current_x)
+                neuron.output = Z
+                current_x[width_index] = Z
+                debug_inputs_current_layer.append(current_x) # DEBUG
+            
+            debug_inputs.append(debug_inputs_current_layer)
 
         # Calculating with Output Layer
-        result = []
+        debug_inputs_output_layer = [] # DEBUG
         for output_node_index in range(self.output_size):
             neuron = self.layers[-1][output_node_index]
-            Z = neuron.activate(Z_predicted)
+            neuron.input = current_x
+            Z = neuron.activate(current_x)
+            neuron.output = Z
             result.append(Z)
+            debug_inputs_output_layer.append(current_x) # DEBUG
+
+        debug_inputs.append(debug_inputs_output_layer)
+
+        #print("Current inputs: {0}".format(debug_inputs))
 
         return result
 
@@ -80,8 +96,7 @@ class NeuralNetwork:
         errors = []
 
         for layer_index in range(len(self.layers)):
-            # We are on the output layer
-            if layer_index == output_layer_index:
+            if layer_index == output_layer_index: # We are on the output layer
                 for neuron_index in range(len(y_real)):
                     neuron = self.layers[layer_index][neuron_index]
                     errors.append(y_predicted[neuron_index] - y_real[neuron_index])
@@ -100,6 +115,8 @@ class NeuralNetwork:
 
     def update_weights(self, training_data_X, learning_rate = 0.001):
         pass
+        #for layer_index in range(len(self.layers)):
+
 
     def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001):
         for epoch in range(num_epochs):
@@ -107,12 +124,21 @@ class NeuralNetwork:
             # Variables
             error = 0.0
             amount_of_correct = 0
+            training_data_X_len = len(training_data_X)
+            avg_error = 0.0
 
-            for index in range(len(training_data_X)):
+            for index in range(training_data_X_len):
                 Z = self.predict(training_data_X[index])
                 self.backpropagate(training_data_y[index], Z)
                 self.update_weights(training_data_X=training_data_X[index], learning_rate=learning_rate)
-                print("[TRAINING][EPOCH {0}] Error: {1}".format(epoch + 1, self.layers[-1][0].delta))
+
+                for neuron in self.layers[-1]:
+                    avg_error += neuron.delta
+
+                    if index != 0:
+                        avg_error = avg_error / 2.0
+
+            print("[TRAINING][EPOCH {0}] Error: {1}".format(epoch + 1, avg_error))
 
 
 

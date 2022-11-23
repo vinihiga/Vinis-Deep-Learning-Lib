@@ -99,11 +99,10 @@ class NeuralNetwork:
         return result
 
     def backpropagate(self, y_real, y_predicted):
-        output_layer_index = len(self.layers) - 1
-        errors = []
-
         for layer_index in range(len(self.layers)):
-            if layer_index == output_layer_index: # We are on the output layer
+            errors = []
+            
+            if layer_index == len(self.layers) - 1: # We are on the output layer
                 for neuron_index in range(len(y_real)):
                     neuron = self.layers[layer_index][neuron_index]
                     errors.append(y_predicted[neuron_index] - y_real[neuron_index])
@@ -115,7 +114,7 @@ class NeuralNetwork:
                         error += neuron.weights[weight_index] * neuron.delta
                     errors.append(error)
 
-            amount_neurons = self.width if layer_index != output_layer_index else len(y_real)
+            amount_neurons = self.width if layer_index != (len(self.layers) - 1) else len(y_real)
             for neuron_index in range(amount_neurons):
                 neuron = self.layers[layer_index][neuron_index]
                 neuron.delta = errors[neuron_index] * derivative_sigmoid(neuron.output)
@@ -123,11 +122,11 @@ class NeuralNetwork:
     def update_weights(self, learning_rate = 0.001):
         for layer_index in range(len(self.layers)):
             for neuron in self.layers[layer_index]:
-                if layer_index == len(self.layers) - 1:
-                    neuron.weights[index] -= learning_rate * neuron.delta
-                else:
-                    for index in range(len(neuron.input)):
-                        neuron.weights[index] -= learning_rate * neuron.input[index] * neuron.delta
+                for weight_index in range(len(neuron.weights)):
+                    if layer_index == len(self.layers) - 1:
+                        neuron.weights[weight_index] -= learning_rate * neuron.delta
+                    else:
+                        neuron.weights[weight_index] -= learning_rate * neuron.input[weight_index] * neuron.delta
 
 
     def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001):
@@ -167,7 +166,7 @@ if __name__ == '__main__':
     training_data_y = [[0], [1], [1], [0]]
 
     neural_network = NeuralNetwork(num_layers=1, width=2, input_size=2, output_size=1)
-    neural_network.train(num_epochs=3, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001)
+    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001)
 
     Z = neural_network.predict([1, 1])
     Z[0] = 1 if Z[0] >= 0.5 else 0

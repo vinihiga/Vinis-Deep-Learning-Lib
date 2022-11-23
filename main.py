@@ -1,4 +1,11 @@
 import numpy as np
+import math
+
+def sigmoid(x) -> float:
+    return 1 / 1 + math.exp(-x)
+
+def derivative_sigmoid(x) -> float:
+    return sigmoid(x)*(1 - sigmoid(x))
 
 def relu(x) -> float:
     return np.maximum(0, x)
@@ -22,7 +29,7 @@ class Neuron:
 
         # TODO: Bias sum
 
-        y = relu(y)
+        y = sigmoid(y)
         self.output = y # Storing last output value for backpropagation
         return y
 
@@ -111,18 +118,22 @@ class NeuralNetwork:
             amount_neurons = self.width if layer_index != output_layer_index else len(y_real)
             for neuron_index in range(amount_neurons):
                 neuron = self.layers[layer_index][neuron_index]
-                neuron.delta = errors[neuron_index] * derivative_relu(neuron.output)
+                neuron.delta = errors[neuron_index] * derivative_sigmoid(neuron.output)
 
-    def update_weights(self, training_data_X, learning_rate = 0.001):
-        pass
-        #for layer_index in range(len(self.layers)):
+    def update_weights(self, learning_rate = 0.001):
+        for layer_index in range(len(self.layers)):
+            for neuron in self.layers[layer_index]:
+                if layer_index == len(self.layers) - 1:
+                    neuron.weights[index] -= learning_rate * neuron.delta
+                else:
+                    for index in range(len(neuron.input)):
+                        neuron.weights[index] -= learning_rate * neuron.input[index] * neuron.delta
 
 
     def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001):
         for epoch in range(num_epochs):
 
             # Variables
-            error = 0.0
             amount_of_correct = 0
             training_data_X_len = len(training_data_X)
             avg_error = 0.0
@@ -130,7 +141,7 @@ class NeuralNetwork:
             for index in range(training_data_X_len):
                 Z = self.predict(training_data_X[index])
                 self.backpropagate(training_data_y[index], Z)
-                self.update_weights(training_data_X=training_data_X[index], learning_rate=learning_rate)
+                self.update_weights(learning_rate=learning_rate)
 
                 for neuron in self.layers[-1]:
                     avg_error += neuron.delta
@@ -138,17 +149,27 @@ class NeuralNetwork:
                     if index != 0:
                         avg_error = avg_error / 2.0
 
-            print("[TRAINING][EPOCH {0}] Error: {1}".format(epoch + 1, avg_error))
+                for Z_index in range(len(Z)):
+                    Z[Z_index] = 1 if Z[Z_index] >= 0.5 else 0
+
+                if Z == training_data_y[index]:
+                    amount_of_correct += 1
+
+            print("[TRAINING][EPOCH {0}] Error: {1}    Accuracy: {2}".format(epoch + 1, avg_error, amount_of_correct / training_data_X_len))
+
+        print("[TRAINING FINISHED]\n\n\n")
 
 
 
 
 if __name__ == '__main__':
-    #training_data_X = [[0,0], [0,1], [1,0], [1,1]]
-    #training_data_y = [[0], [1], [1], [0]]
-
-    training_data_X = [[0,1], [1,0], [1,1]]
-    training_data_y = [[1], [1], [0]]
+    training_data_X = [[0,0], [0,1], [1,0], [1,1]]
+    training_data_y = [[0], [1], [1], [0]]
 
     neural_network = NeuralNetwork(num_layers=1, width=2, input_size=2, output_size=1)
-    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.1)
+    neural_network.train(num_epochs=3, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001)
+
+    Z = neural_network.predict([1, 1])
+    Z[0] = 1 if Z[0] >= 0.5 else 0
+
+    print("[PREDICT] Result: {0}".format(Z))

@@ -1,17 +1,17 @@
 import numpy as np
 import math
 
-def sigmoid(x) -> float:
-    return 1 / 1 + math.exp(-x)
+# def sigmoid(x) -> float:
+#     return 1 / 1 + math.exp(-x)
 
-def derivative_sigmoid(x) -> float:
-    return sigmoid(x)*(1 - sigmoid(x))
+# def derivative_sigmoid(x) -> float:
+#     return sigmoid(x)*(1 - sigmoid(x))
 
 def relu(x) -> float:
     return np.maximum(0, x)
 
 def derivative_relu(x) -> float:
-    if np.maximum(0, x) == x:
+    if x > 0:
         return 1
     
     return 0
@@ -26,12 +26,10 @@ class Neuron:
 
     def activate(self, x: np.matrix) -> np.matrix:
         y = np.dot(x, self.weights)
-
         # TODO: Bias sum
-
-        y = sigmoid(y)
-        self.output = y # Storing last output value for backpropagation
-        return y
+        z = relu(y)
+        self.output = z # Storing last output value for backpropagation
+        return z
 
 class NeuralNetwork:
     def __init__(self, num_layers: int, width: int, input_size: int, output_size: int):
@@ -117,7 +115,7 @@ class NeuralNetwork:
             amount_neurons = self.width if layer_index != (len(self.layers) - 1) else len(y_real)
             for neuron_index in range(amount_neurons):
                 neuron = self.layers[layer_index][neuron_index]
-                neuron.delta = errors[neuron_index] * derivative_sigmoid(neuron.output)
+                neuron.delta = errors[neuron_index] * derivative_relu(neuron.output)
 
     def update_weights(self, learning_rate = 0.001):
         for layer_index in range(len(self.layers)):
@@ -127,7 +125,6 @@ class NeuralNetwork:
                         neuron.weights[weight_index] -= learning_rate * neuron.delta
                     else:
                         neuron.weights[weight_index] -= learning_rate * neuron.input[weight_index] * neuron.delta
-
 
     def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001):
         for epoch in range(num_epochs):
@@ -165,10 +162,13 @@ if __name__ == '__main__':
     training_data_X = [[0,0], [0,1], [1,0], [1,1]]
     training_data_y = [[0], [1], [1], [0]]
 
-    neural_network = NeuralNetwork(num_layers=1, width=2, input_size=2, output_size=1)
-    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001)
+    #training_data_X = [[0.5], [1], [0.25], [0]]
+    #training_data_y = [[1], [1], [0], [0]]
 
-    Z = neural_network.predict([1, 1])
-    Z[0] = 1 if Z[0] >= 0.5 else 0
+    neural_network = NeuralNetwork(num_layers=1, width=1, input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
+    neural_network.train(num_epochs=1, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001)
 
-    print("[PREDICT] Result: {0}".format(Z))
+    # Z = neural_network.predict([1])
+    # Z[0] = 1 if Z[0] >= 0.5 else 0
+
+    # print("[PREDICT] Result: {0}".format(Z))

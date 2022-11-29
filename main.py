@@ -32,48 +32,55 @@ class Neuron:
         return z
 
 class NeuralNetwork:
-    def __init__(self, num_layers: int, width: int, input_size: int, output_size: int):
-        self.num_layers = num_layers
-        self.width = width
+    def __init__(self, input_size: int, output_size: int):
         self.input_size = input_size
         self.output_size = output_size
         self.layers = []
-        self.build()
 
-    def build(self):
-        neurons_to_create = self.num_layers * self.width
+    def add_layer(self, width: int):
         num_previous_nodes = self.input_size
+        neurons_to_create = width
 
-        # Creating now the hidden layers
-        while neurons_to_create > 0:
-            layer = []
+        if len(self.layers) != 0:
+            num_previous_nodes = len(self.layers[-2])
 
-            for _ in range(self.width):
-                layer.append(Neuron(num_connections=num_previous_nodes))
-            
+        # Creating the hidden layer
+        layer = []
+
+        for _ in range(neurons_to_create):
+            layer.append(Neuron(num_connections=num_previous_nodes))
+        
+        if len(self.layers) == 0:
             self.layers.append(layer)
-            neurons_to_create = neurons_to_create - self.width
-            num_previous_nodes = self.width
+        else:
+            self.layers[-1] = layer
+
+        # Creating the output layer
+        num_previous_nodes = width
+        neurons_to_create = self.output_size
+        layer = []
+
+        for _ in range(neurons_to_create):
+            layer.append(Neuron(num_connections=num_previous_nodes))
         
-        # Creating now the output layer
-        output_layer = []
-        for _ in range(self.output_size):
-            output_layer.append(Neuron(num_connections=num_previous_nodes))
-        
-        self.layers.append(output_layer)
+        self.layers.append(layer)
 
     def predict(self, x: list) -> list:
+
+        if len(self.layers) == 0:
+            raise Exception("Please add the layers before predicting.")
+
         result = []
         current_x = x
         debug_inputs = [] # DEBUG
 
         # Calculating with Hidden Layers
-        for layer_index in range(self.num_layers):
+        for layer_index in range(len(self.layers) - 1):
             debug_inputs_current_layer = [] # DEBUG
+            current_layer_size = len(self.layers[layer_index])
+            new_x = np.zeros(current_layer_size)
 
-            new_x = np.zeros(self.width)
-
-            for width_index in range(self.width):  
+            for width_index in range(current_layer_size):  
                 neuron = self.layers[layer_index][width_index]
                 neuron.input = current_x
                 Z = neuron.activate(current_x)
@@ -112,14 +119,14 @@ class NeuralNetwork:
                     neuron = self.layers[layer_index][neuron_index]
                     errors.append(y_predicted[neuron_index] - y_real[neuron_index])
             else: # We are on the hidden layer
-                for neuron_index in range(self.width):
+                for neuron_index in range(len(self.layers[layer_index])):
                     error = 0.0
                     neuron = self.layers[layer_index][neuron_index]
                     for weight_index in range(len(neuron.weights)):
                         error += neuron.weights[weight_index] * neuron.delta
                     errors.append(error)
 
-            amount_neurons = self.width if layer_index != (len(self.layers) - 1) else len(y_real)
+            amount_neurons = len(self.layers[layer_index]) if layer_index != (len(self.layers) - 1) else len(y_real)
             for neuron_index in range(amount_neurons):
                 neuron = self.layers[layer_index][neuron_index]
                 neuron.delta = errors[neuron_index] * derivative_relu(neuron.output)
@@ -159,7 +166,7 @@ class NeuralNetwork:
                 if Z == training_data_y[index]:
                     amount_of_correct += 1
 
-            if verbose == True:
+            if verbose == True and (epoch + 1) % 10 == 0:
                 print("[TRAINING][EPOCH {0}] Error: {1}    Accuracy: {2}".format(epoch + 1, avg_error, amount_of_correct / training_data_X_len))
 
 if __name__ == '__main__':
@@ -169,8 +176,9 @@ if __name__ == '__main__':
     #training_data_X = [[0.5], [1], [0.25], [0]]
     #training_data_y = [[1], [1], [0], [0]]
 
-    neural_network = NeuralNetwork(num_layers=1, width=2, input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
-    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=False)
+    neural_network = NeuralNetwork(input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
+    neural_network.add_layer(width=2)
+    neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
 
     Z = neural_network.predict([1, 1])
     Z[0] = 1 if Z[0] >= 0.5 else 0

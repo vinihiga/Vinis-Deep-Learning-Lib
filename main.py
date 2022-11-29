@@ -1,35 +1,43 @@
 import numpy as np
 import math
 
-# def sigmoid(x) -> float:
-#     return 1 / 1 + math.exp(-x)
+def sigmoid(x) -> float:
+    return 1 / 1 + math.exp(-x)
 
-# def derivative_sigmoid(x) -> float:
-#     return sigmoid(x)*(1 - sigmoid(x))
+def derivative_sigmoid(x) -> float:
+    return sigmoid(x)*(1 - sigmoid(x))
 
-def relu(x) -> float:
-    return np.maximum(0, x)
+# def relu(x) -> float:
+#     return np.maximum(0, x)
 
-def derivative_relu(x) -> float:
-    if x > 0:
-        return 1
+# def derivative_relu(x) -> float:
+#     if x > 0:
+#         return 1
     
-    return 0
+#     return 0
 
 class Neuron:
-    def __init__(self, num_connections: int):
-        self.weights = np.random.rand(num_connections)
-        self.bias = np.zeros(1)
+    def __init__(self, num_connections: int, activation_function, derivative_function):
+        self.num_connections = num_connections
+        self.activation_function = activation_function
+        self.derivative_function = derivative_function
+
         self.delta = 1.0 # This is used for calculating the error
         self.output = 1.0 # This is also used for calculating the error
         self.input = 1.0 # This is also used for calculating the error
 
+        self.weights = self.__weight_initialization__()
+        self.bias = np.zeros(1)
+
     def activate(self, x: np.matrix) -> np.matrix:
         y = np.dot(x, self.weights)
-        # TODO: Bias sum
-        z = relu(y)
+        #y = np.sum(y, self.bias)
+        z = self.activation_function(y)
         self.output = z # Storing last output value for backpropagation
         return z
+
+    def __weight_initialization__(self):
+        return np.random.rand(self.num_connections)
 
 class NeuralNetwork:
     def __init__(self, input_size: int, output_size: int):
@@ -37,7 +45,7 @@ class NeuralNetwork:
         self.output_size = output_size
         self.layers = []
 
-    def add_layer(self, width: int):
+    def add_layer(self, width: int, activation_function, derivative_function):
         num_previous_nodes = self.input_size
         neurons_to_create = width
 
@@ -48,7 +56,7 @@ class NeuralNetwork:
         layer = []
 
         for _ in range(neurons_to_create):
-            layer.append(Neuron(num_connections=num_previous_nodes))
+            layer.append(Neuron(num_connections=num_previous_nodes, activation_function=activation_function, derivative_function=derivative_function))
         
         if len(self.layers) == 0:
             self.layers.append(layer)
@@ -61,7 +69,7 @@ class NeuralNetwork:
         layer = []
 
         for _ in range(neurons_to_create):
-            layer.append(Neuron(num_connections=num_previous_nodes))
+            layer.append(Neuron(num_connections=num_previous_nodes, activation_function=activation_function, derivative_function=derivative_function))
         
         self.layers.append(layer)
 
@@ -129,7 +137,7 @@ class NeuralNetwork:
             amount_neurons = len(self.layers[layer_index]) if layer_index != (len(self.layers) - 1) else len(y_real)
             for neuron_index in range(amount_neurons):
                 neuron = self.layers[layer_index][neuron_index]
-                neuron.delta = errors[neuron_index] * derivative_relu(neuron.output)
+                neuron.delta = errors[neuron_index] * neuron.derivative_function(neuron.output) #derivative_relu(neuron.output)
 
     def update_weights(self, learning_rate = 0.001):
         for layer_index in range(len(self.layers)):
@@ -177,7 +185,7 @@ if __name__ == '__main__':
     #training_data_y = [[1], [1], [0], [0]]
 
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
-    neural_network.add_layer(width=2)
+    neural_network.add_layer(width=2, activation_function=sigmoid, derivative_function=derivative_sigmoid)
     neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
 
     Z = neural_network.predict([1, 1])

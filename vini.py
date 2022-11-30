@@ -178,11 +178,13 @@ class NeuralNetwork:
                 print("[TRAINING][EPOCH {0}] Error: {1}    Accuracy: {2}".format(epoch + 1, avg_error, amount_of_correct / training_data_X_len))
 
 if __name__ == '__main__':
+
+    # This is used for testing XOR
+
+    print("[ STARTING XOR TEST ]")
+
     training_data_X = [[0,1], [0,0], [1,0], [1,1]]
     training_data_y = [[1], [0], [1], [0]]
-
-    #training_data_X = [[0.5], [1], [0.25], [0]]
-    #training_data_y = [[1], [1], [0], [0]]
 
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
     neural_network.add_layer(width=2, activation_function=sigmoid, derivative_function=derivative_sigmoid)

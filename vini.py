@@ -2,19 +2,19 @@ import numpy as np
 import math
 
 def sigmoid(x) -> float:
-    return 1 / 1 + math.exp(-x)
+    return 1 / (1 + math.exp(-x))
 
 def derivative_sigmoid(x) -> float:
     return sigmoid(x)*(1 - sigmoid(x))
 
-# def relu(x) -> float:
-#     return np.maximum(0, x)
+def relu(x) -> float:
+    return np.maximum(0, x)
 
-# def derivative_relu(x) -> float:
-#     if x > 0:
-#         return 1
+def derivative_relu(x) -> float:
+    if x > 0:
+        return 1
     
-#     return 0
+    return 0
 
 class Neuron:
     def __init__(self, num_connections: int, activation_function, derivative_function):
@@ -37,7 +37,7 @@ class Neuron:
         return z
 
     def __weight_initialization__(self):
-        return np.random.rand(self.num_connections)
+        return np.random.randn(self.num_connections)
 
 class NeuralNetwork:
     def __init__(self, input_size: int, output_size: int):
@@ -80,11 +80,9 @@ class NeuralNetwork:
 
         result = []
         current_x = x
-        debug_inputs = [] # DEBUG
 
         # Calculating with Hidden Layers
         for layer_index in range(len(self.layers) - 1):
-            debug_inputs_current_layer = [] # DEBUG
             current_layer_size = len(self.layers[layer_index])
             new_x = np.zeros(current_layer_size)
 
@@ -93,28 +91,19 @@ class NeuralNetwork:
                 neuron.input = current_x
                 Z = neuron.activate(current_x)
                 neuron.output = Z
-
                 new_x[width_index] = Z
-
-                debug_inputs_current_layer.append(current_x) # DEBUG
             
             current_x = new_x
 
-            debug_inputs.append(debug_inputs_current_layer)
-
         # Calculating with Output Layer
-        debug_inputs_output_layer = [] # DEBUG
         for output_node_index in range(self.output_size):
             neuron = self.layers[-1][output_node_index]
             neuron.input = current_x
             Z = neuron.activate(current_x)
             neuron.output = Z
             result.append(Z)
-            debug_inputs_output_layer.append(current_x) # DEBUG
 
-        debug_inputs.append(debug_inputs_output_layer)
-
-        #print("Current inputs: {0}".format(debug_inputs))
+        #print("PREDICTED: " + str(result[0]))
 
         return result
 
@@ -188,9 +177,9 @@ if __name__ == '__main__':
 
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
     neural_network.add_layer(width=2, activation_function=sigmoid, derivative_function=derivative_sigmoid)
-    neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
+    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
 
-    Z = neural_network.predict([1, 1])
-    Z[0] = 1 if Z[0] >= 0.5 else 0
+    # Z = neural_network.predict([1, 1])
+    # Z[0] = 1 if Z[0] >= 0.5 else 0
 
-    print("[PREDICT] Result: {0}".format(Z))
+    # print("[PREDICT] Result: {0}".format(Z))

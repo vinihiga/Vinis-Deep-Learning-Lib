@@ -107,7 +107,7 @@ class NeuralNetwork:
 
         return result
 
-    def backpropagate(self, y_real, y_predicted):
+    def backpropagate(self, y_real, y_predicted, learning_rate = 0.001):
         for layer_index in reversed(range(len(self.layers))):
             errors = []
             
@@ -123,24 +123,23 @@ class NeuralNetwork:
                 for neuron_index in range(len(y_real)):
                     neuron = self.layers[layer_index][neuron_index]
                     # dE/dW2 = dE/dO * dO/dZ * dZ/dW2
-                    derivative_output = - (y_predicted[neuron_index] - y_real[neuron_index])
-                    derivative_activation = neuron.derivative_function(neuron.input) # or output?
-                    derivative_linear_function = neuron.input
+                    derivative_output = -(y_real[neuron_index] - y_predicted[neuron_index])
+                    derivative_activation = neuron.derivative_function(neuron.output)
+                    derivative_linear_function = np.sum(neuron.input)
                     errors.append(derivative_output * derivative_activation * derivative_linear_function)
             else: # We are on the hidden layer
                 for neuron_index in range(len(self.layers[layer_index])):
                     neuron = self.layers[layer_index][neuron_index]
 
-                    for weight_index in range(len(self.layers[layer_index][neuron_index])):
-                        # dE / dW1 = dE / dO * dO/dZ * dZ/dW1
-                        derivative_output = 0
+                    # dE / dW1 = dE / dO * dO/dZ * dZ/dW1
+                    derivative_output = 0
 
-                        # Getting the deltas from parents
-                        for parent_index in range(len(self.layers[layer_index + 1])):
-                            derivative_output += self.layers[layer_index + 1][parent_index].delta
+                    # Getting the deltas from parents
+                    for parent_index in range(len(self.layers[layer_index + 1])):
+                        derivative_output += self.layers[layer_index + 1][parent_index].delta
 
-                        derivative_activation = neuron.derivative_function(neuron.input) # or output?
-                        derivative_linear_function = neuron.input
+                    derivative_activation = neuron.derivative_function(neuron.output)
+                    derivative_linear_function = np.sum(neuron.input)
 
                     errors.append(derivative_output * derivative_activation * derivative_linear_function)
 
@@ -148,12 +147,9 @@ class NeuralNetwork:
             for neuron_index in range(amount_neurons):
                 neuron = self.layers[layer_index][neuron_index]
                 neuron.delta = errors[neuron_index] #* neuron.derivative_function(neuron.output) #derivative_relu(neuron.output)
-
-    def update_weights(self, learning_rate = 0.001):
-        for layer_index in range(len(self.layers)):
-            for neuron in self.layers[layer_index]:
+                
                 for weight_index in range(len(neuron.weights)):
-                    neuron.weights[weight_index] -= learning_rate * neuron.delta
+                    neuron.weights[weight_index] -= learning_rate * errors[neuron_index]
 
     def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001, verbose = True):
         for epoch in range(num_epochs):
@@ -163,22 +159,20 @@ class NeuralNetwork:
             training_data_X_len = len(training_data_X)
             avg_error = 0.0
 
-            for index in range(training_data_X_len):
-                Z = self.predict(training_data_X[index])
-                self.backpropagate(training_data_y[index], Z)
-                self.update_weights(learning_rate=learning_rate)
+            for data_index in range(training_data_X_len):
+                Z = self.predict(training_data_X[data_index])
+                self.backpropagate(training_data_y[data_index], Z, learning_rate)
 
-                for neuron in self.layers[-1]:
-                    avg_error += neuron.delta
-
-                    if index != 0:
-                        avg_error = avg_error / 2.0
+                # TODO: Check if loss (MSE) is correct for N outputs for each training data
+                for output_index in range(len(Z)):
+                    abs_error = Z[output_index] - training_data_y[data_index][output_index]
+                    avg_error += pow(abs_error, 2) / 2.0
 
                 # Accuracy - for debugging purposes
                 for Z_index in range(len(Z)):
                     Z[Z_index] = 1 if Z[Z_index] >= 0.5 else 0
 
-                if Z == training_data_y[index]:
+                if Z == training_data_y[data_index]:
                     amount_of_correct += 1
 
             if verbose == True and (epoch + 1) % 10 == 0:
@@ -188,14 +182,15 @@ if __name__ == '__main__':
 
     # This is used for testing XOR
 
-    #print("[ STARTING XOR TEST ]")
+    print("[ STARTING XOR TEST ]")
 
-    training_data_X = [[0.5], [0.0], [0.25], [1.0], [0.1], [0.9]]
-    training_data_y = [[1], [0], [0], [1], [0], [1]]
+    training_data_X = [[1,0], [0,0], [1,1], [0,1]]
+    training_data_y = [[1], [0], [0], [1]]
 
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
+    neural_network.add_layer(width=2, activation_function=sigmoid, derivative_function=derivative_sigmoid)
     neural_network.add_layer(width=1, activation_function=sigmoid, derivative_function=derivative_sigmoid)
-    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
+    neural_network.train(num_epochs=50000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
 
     # Z = neural_network.predict([1, 1])
     # Z[0] = 1 if Z[0] >= 0.5 else 0

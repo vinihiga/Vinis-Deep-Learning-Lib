@@ -8,13 +8,13 @@ def derivative_sigmoid(x) -> float:
     return sigmoid(x)*(1 - sigmoid(x))
 
 def relu(x) -> float:
-    return np.maximum(0, x)
+    return np.maximum(0.001, x)
 
 def derivative_relu(x) -> float:
     if x > 0:
         return 1
     
-    return 0
+    return 0.001
 
 class Neuron:
     def __init__(self, num_connections: int, activation_function, derivative_function):
@@ -163,10 +163,10 @@ class NeuralNetwork:
                 Z = self.predict(training_data_X[data_index])
                 self.backpropagate(training_data_y[data_index], Z, learning_rate)
 
-                # TODO: Check if loss (MSE) is correct for N outputs for each training data
+                # TODO: Change loss functions... Allow the user to select
                 for output_index in range(len(Z)):
                     abs_error = Z[output_index] - training_data_y[data_index][output_index]
-                    avg_error += pow(abs_error, 2) / 2.0
+                    avg_error += pow(abs_error, 2)
 
                 # Accuracy - for debugging purposes
                 for Z_index in range(len(Z)):
@@ -188,9 +188,9 @@ if __name__ == '__main__':
     training_data_y = [[1], [0], [0], [1]]
 
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
-    neural_network.add_layer(width=2, activation_function=sigmoid, derivative_function=derivative_sigmoid)
-    neural_network.add_layer(width=1, activation_function=sigmoid, derivative_function=derivative_sigmoid)
-    neural_network.train(num_epochs=50000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
+    neural_network.add_layer(width=2, activation_function=relu, derivative_function=derivative_relu)
+    neural_network.add_layer(width=1, activation_function=relu, derivative_function=derivative_relu)
+    neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.5, verbose=True)
 
     # Z = neural_network.predict([1, 1])
     # Z[0] = 1 if Z[0] >= 0.5 else 0

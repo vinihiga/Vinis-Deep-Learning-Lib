@@ -18,8 +18,8 @@ for y_real in y_raw:
 x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
 
 neural_network = NeuralNetwork(input_size=len(x_train[0]), output_size=len(y_train[0]))
-neural_network.add_layer(width=512, activation_function=relu, derivative_function=derivative_relu)
-neural_network.add_layer(width=10, activation_function=relu, derivative_function=derivative_relu)
+neural_network.add_layer(width=16, activation_function=sigmoid, derivative_function=derivative_sigmoid)
+neural_network.add_layer(width=8, activation_function=sigmoid, derivative_function=derivative_sigmoid)
 neural_network.train(num_epochs=100, training_data_X=X, training_data_y=y, learning_rate=0.001, verbose=True)
 
 # import tensorflow as tf

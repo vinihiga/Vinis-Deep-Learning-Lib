@@ -124,18 +124,25 @@ class NeuralNetwork:
                     neuron = self.layers[layer_index][neuron_index]
                     # dE/dW2 = dE/dO * dO/dZ * dZ/dW2
                     derivative_output = - (y_predicted[neuron_index] - y_real[neuron_index])
-                    derivative_activation = neuron.derivative(neuron.input) # or output?
+                    derivative_activation = neuron.derivative_function(neuron.input) # or output?
                     derivative_linear_function = neuron.input
                     errors.append(derivative_output * derivative_activation * derivative_linear_function)
             else: # We are on the hidden layer
                 for neuron_index in range(len(self.layers[layer_index])):
+                    neuron = self.layers[layer_index][neuron_index]
+
                     for weight_index in range(len(self.layers[layer_index][neuron_index])):
                         # dE / dW1 = dE / dO * dO/dZ * dZ/dW1
                         derivative_output = 0
 
-                        for 
+                        # Getting the deltas from parents
+                        for parent_index in range(len(self.layers[layer_index + 1])):
+                            derivative_output += self.layers[layer_index + 1][parent_index].delta
 
-                    errors.append(error)
+                        derivative_activation = neuron.derivative_function(neuron.input) # or output?
+                        derivative_linear_function = neuron.input
+
+                    errors.append(derivative_output * derivative_activation * derivative_linear_function)
 
             amount_neurons = len(self.layers[layer_index]) if layer_index != (len(self.layers) - 1) else len(y_real)
             for neuron_index in range(amount_neurons):

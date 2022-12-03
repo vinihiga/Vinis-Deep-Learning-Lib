@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import json
 
 def sigmoid(x) -> float:
     return 1 / (1 + math.exp(-x))
@@ -37,39 +38,38 @@ class Neuron:
         return z
 
     def __weight_initialization__(self):
-        return np.random.randn(self.num_connections)
+        # Using He initialization
+        return np.random.randn(self.num_connections) * math.sqrt(2 / self.num_connections)
 
 class NeuralNetwork:
-    def __init__(self, input_size: int, output_size: int):
+    def __init__(self, input_size: int):
         self.input_size = input_size
-        self.output_size = output_size
         self.layers = []
 
-    def add_layer(self, width: int, activation_function, derivative_function):
+    def add_layer(self, width: int, activation_function: str):
         num_previous_nodes = self.input_size
         neurons_to_create = width
 
         if len(self.layers) != 0:
-            num_previous_nodes = len(self.layers[-2])
+            num_previous_nodes = len(self.layers[-1])
 
         # Creating the hidden layer
         layer = []
 
         for _ in range(neurons_to_create):
-            layer.append(Neuron(num_connections=num_previous_nodes, activation_function=activation_function, derivative_function=derivative_function))
-        
-        if len(self.layers) == 0:
-            self.layers.append(layer)
-        else:
-            self.layers[-1] = layer
+            activation_ref = None
+            derivative_ref = None
 
-        # Creating the output layer
-        num_previous_nodes = width
-        neurons_to_create = self.output_size
-        layer = []
+            if activation_function == "sigmoid":
+                activation_ref = sigmoid
+                derivative_ref = derivative_sigmoid
+            elif activation_function == "relu":
+                activation_ref = relu
+                derivative_ref = derivative_relu
+            elif activation_ref == None or derivative_ref == None:
+                raise Exception("No activation or derivative functions was passed")
 
-        for _ in range(neurons_to_create):
-            layer.append(Neuron(num_connections=num_previous_nodes, activation_function=activation_function, derivative_function=derivative_function))
+            layer.append(Neuron(num_connections=num_previous_nodes, activation_function=activation_ref, derivative_function=derivative_ref))
         
         self.layers.append(layer)
 
@@ -82,7 +82,7 @@ class NeuralNetwork:
         current_x = x
 
         # Calculating with Hidden Layers
-        for layer_index in range(len(self.layers) - 1):
+        for layer_index in range(len(self.layers) - 2):
             current_layer_size = len(self.layers[layer_index])
             new_x = np.zeros(current_layer_size)
 
@@ -96,7 +96,7 @@ class NeuralNetwork:
             current_x = new_x
 
         # Calculating with Output Layer
-        for output_node_index in range(self.output_size):
+        for output_node_index in range(len(self.layers[-1])):
             neuron = self.layers[-1][output_node_index]
             neuron.input = current_x
             Z = neuron.activate(current_x)
@@ -151,6 +151,64 @@ class NeuralNetwork:
                 for weight_index in range(len(neuron.weights)):
                     neuron.weights[weight_index] -= learning_rate * errors[neuron_index]
 
+    def save(self):
+        data = {
+            "layers": []
+        }
+
+        for layer_index in range(len(self.layers)):
+            layer = []
+
+            for neuron_index in range(len(self.layers[layer_index])):
+                neuron = self.layers[layer_index][neuron_index]
+                weights = []
+                bias = []
+
+                if type(neuron.weights) == list:
+                    weights = neuron.weights
+                else:
+                    weights = neuron.weights.tolist()
+
+                if type(neuron.bias) == list:
+                    bias = neuron.bias
+                else:
+                    bias = neuron.bias.tolist()
+
+                if len(weights) == 0 or len(bias) == 0:
+                    raise Exception("Fatal error! Couldn't resolve weights or bias!")
+
+                actual_neuron_data = {
+                    "activation_name": neuron.activation_function.__name__,
+                    "weights": weights,
+                    "bias": bias
+                }
+
+                layer.append(actual_neuron_data)
+            
+            data["layers"].append(layer)
+
+        print("[SAVING DATA]")
+        with open('checkpoint.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+    def load(path: str, input_size: int) -> 'NeuralNetwork':
+        neural_network = NeuralNetwork(input_size=input_size)
+        print("[LOADING DATA]")
+
+        with open('checkpoint.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+            for layer_index in range(len(data["layers"])):
+                width = len(data["layers"][layer_index])
+                activation_name = data["layers"][layer_index][0]["activation_name"]
+                neural_network.add_layer(width, activation_name)
+                
+                for neuron_index in range(len(data["layers"][layer_index])):
+                    neural_network.layers[-1][neuron_index].weights = data["layers"][layer_index][neuron_index]["weights"]
+                    neural_network.layers[-1][neuron_index].bias = data["layers"][layer_index][neuron_index]["bias"]
+        
+        return neural_network
+
     def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001, verbose = True):
         for epoch in range(num_epochs):
 
@@ -187,12 +245,16 @@ if __name__ == '__main__':
     training_data_X = [[1,0], [0,0], [1,1], [0,1]]
     training_data_y = [[1], [0], [0], [1]]
 
-    neural_network = NeuralNetwork(input_size=len(training_data_X[0]), output_size=len(training_data_y[0]))
-    neural_network.add_layer(width=2, activation_function=relu, derivative_function=derivative_relu)
-    neural_network.add_layer(width=1, activation_function=relu, derivative_function=derivative_relu)
-    neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.5, verbose=True)
+    neural_network = NeuralNetwork(input_size=len(training_data_X[0]))
+    neural_network.add_layer(width=2, activation_function="relu")
+    neural_network.add_layer(width=len(training_data_y[0]), activation_function="sigmoid")
+    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=1.0, verbose=True)
+    neural_network.save()
 
-    # Z = neural_network.predict([1, 1])
-    # Z[0] = 1 if Z[0] >= 0.5 else 0
+    #neural_network = NeuralNetwork.load("./checkpoint.json", input_size=len(training_data_X[0]))
+    #neural_network.save()
 
-    # print("[PREDICT] Result: {0}".format(Z))
+    Z = neural_network.predict([1, 0])
+    Z[0] = 1 if Z[0] >= 0.5 else 0
+
+    print("[PREDICT] Result: {0}".format(Z))

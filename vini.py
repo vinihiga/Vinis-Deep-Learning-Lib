@@ -9,13 +9,13 @@ def derivative_sigmoid(x) -> float:
     return sigmoid(x)*(1 - sigmoid(x))
 
 def relu(x) -> float:
-    return np.maximum(0.001, x)
+    return np.maximum(0, x)
 
 def derivative_relu(x) -> float:
     if x > 0:
         return 1
     
-    return 0.001
+    return 0
 
 class Neuron:
     def __init__(self, num_connections: int, activation_function, derivative_function):
@@ -32,7 +32,7 @@ class Neuron:
 
     def activate(self, x: np.matrix) -> np.matrix:
         y = np.dot(x, self.weights)
-        #y = np.sum(y, self.bias)
+        y += self.bias
         z = self.activation_function(y)
         self.output = z # Storing last output value for backpropagation
         return z
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]))
     neural_network.add_layer(width=2, activation_function="relu")
     neural_network.add_layer(width=len(training_data_y[0]), activation_function="sigmoid")
-    neural_network.train(num_epochs=100, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=1.0, verbose=True)
+    neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
     neural_network.save()
 
     #neural_network = NeuralNetwork.load("./checkpoint.json", input_size=len(training_data_X[0]))

@@ -123,10 +123,11 @@ class NeuralNetwork:
                 for neuron_index in range(len(y_real)):
                     neuron = self.layers[layer_index][neuron_index]
                     # dE/dW2 = dE/dO * dO/dZ * dZ/dW2
-                    derivative_output = -(y_real[neuron_index] - y_predicted[neuron_index])
+                    derivative_output = y_predicted[neuron_index] - y_real[neuron_index]
                     derivative_activation = neuron.derivative_function(neuron.output)
                     derivative_linear_function = np.sum(neuron.input)
-                    errors.append(derivative_output * derivative_activation * derivative_linear_function)
+                    delta = derivative_output * derivative_activation * derivative_linear_function
+                    errors.append(delta)
             else: # We are on the hidden layer
                 for neuron_index in range(len(self.layers[layer_index])):
                     neuron = self.layers[layer_index][neuron_index]
@@ -140,8 +141,8 @@ class NeuralNetwork:
 
                     derivative_activation = neuron.derivative_function(neuron.output)
                     derivative_linear_function = np.sum(neuron.input)
-
-                    errors.append(derivative_output * derivative_activation * derivative_linear_function)
+                    delta = derivative_output * derivative_activation * derivative_linear_function
+                    errors.append(delta)
 
             amount_neurons = len(self.layers[layer_index]) if layer_index != (len(self.layers) - 1) else len(y_real)
             for neuron_index in range(amount_neurons):

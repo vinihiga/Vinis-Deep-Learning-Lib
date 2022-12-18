@@ -129,18 +129,24 @@ class NeuralNetwork:
 
                     for weight_index in range(len(neuron.weights)):
                         # dE/dW2 = dE/dO * dO/dZ * dZ/dW2
+                        previous_weight = neuron.weights[weight_index]
+
                         derivative_error = y_real[neuron_index] - y_predicted[neuron_index]
                         derivative_activation = neuron.derivative_function(neuron.output)
                         derivative_linear_function = neuron.input[weight_index] #np.sum(neuron.input)
                         delta = derivative_error * derivative_activation * derivative_linear_function
                         neuron.delta[weight_index] = derivative_error * derivative_activation # Output layer is different from hidden layer
                         neuron.weights[weight_index] -= learning_rate * delta
+
+                        print("[STATUS] Updated weight {0},{1} from {2} to {3}".format(layer_index, weight_index, previous_weight, neuron.weights[weight_index]))
+
             else: # We are on the hidden layer
                 for neuron_index in range(len(self.layers[layer_index])):
                     neuron = self.layers[layer_index][neuron_index]
 
                     for weight_index in range(len(neuron.weights)):
                         # dE / dW1 = previous(dE / dO * dO/dZ) * current(dO/dZ * dZ/dW1)
+                        previous_weight = neuron.weights[weight_index]
                         derivative_errors = 0
 
                         # Getting the deltas from parents
@@ -152,6 +158,9 @@ class NeuralNetwork:
                         delta = derivative_errors * derivative_activation * derivative_linear_function
                         neuron.delta = delta
                         neuron.weights[weight_index] -= learning_rate * delta
+
+                        print("[STATUS] Updated weight {0},{1} from {2} to {3}".format(layer_index, weight_index, previous_weight, neuron.weights[weight_index]))
+
 
     def save(self):
         data = {
@@ -251,7 +260,7 @@ if __name__ == '__main__':
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]))
     neural_network.add_layer(width=2, activation_function="sigmoid")
     neural_network.add_layer(width=len(training_data_y[0]), activation_function="sigmoid")
-    neural_network.train(num_epochs=1000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
+    neural_network.train(num_epochs=1, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
     neural_network.save()
 
     #neural_network = NeuralNetwork.load("./checkpoint.json", input_size=len(training_data_X[0]))

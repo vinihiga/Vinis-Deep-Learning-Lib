@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import json
+import random
 
 def sigmoid(x) -> float:
     return 1 / (1 + math.exp(-x))
@@ -38,7 +39,10 @@ class Neuron:
         return z
 
     def __weight_initialization__(self, should_use_he_init: bool):
-        weight = np.random.randn(self.num_connections)
+        weight = []
+
+        for _ in range(self.num_connections):
+            weight.append(random.uniform(0, 1))
 
         # Using He initialization
         if should_use_he_init:
@@ -134,11 +138,11 @@ class NeuralNetwork:
                         derivative_error = y_real[neuron_index] - y_predicted[neuron_index]
                         derivative_activation = neuron.derivative_function(neuron.output)
                         derivative_linear_function = neuron.input[weight_index] #np.sum(neuron.input)
-                        delta = derivative_error * derivative_activation * derivative_linear_function
+                        delta = -derivative_error * derivative_activation * derivative_linear_function
                         neuron.delta[weight_index] = derivative_error * derivative_activation # Output layer is different from hidden layer
                         neuron.weights[weight_index] -= learning_rate * delta
 
-                        print("[STATUS] Updated weight {0},{1} from {2} to {3}".format(layer_index, weight_index, previous_weight, neuron.weights[weight_index]))
+                        #print("[STATUS] Updated weight {0},{1} from {2} to {3}".format(layer_index, weight_index, previous_weight, neuron.weights[weight_index]))
 
             else: # We are on the hidden layer
                 for neuron_index in range(len(self.layers[layer_index])):
@@ -155,11 +159,11 @@ class NeuralNetwork:
 
                         derivative_activation = neuron.derivative_function(neuron.output)
                         derivative_linear_function = neuron.input[weight_index] #np.sum(neuron.input)
-                        delta = derivative_errors * derivative_activation * derivative_linear_function
+                        delta = -derivative_errors * derivative_activation * derivative_linear_function
                         neuron.delta = delta
                         neuron.weights[weight_index] -= learning_rate * delta
 
-                        print("[STATUS] Updated weight {0},{1} from {2} to {3}".format(layer_index, weight_index, previous_weight, neuron.weights[weight_index]))
+                        #print("[STATUS] Updated weight {0},{1} from {2} to {3}".format(layer_index, weight_index, previous_weight, neuron.weights[weight_index]))
 
 
     def save(self):
@@ -260,7 +264,7 @@ if __name__ == '__main__':
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]))
     neural_network.add_layer(width=2, activation_function="sigmoid")
     neural_network.add_layer(width=len(training_data_y[0]), activation_function="sigmoid")
-    neural_network.train(num_epochs=1, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
+    neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
     neural_network.save()
 
     #neural_network = NeuralNetwork.load("./checkpoint.json", input_size=len(training_data_X[0]))

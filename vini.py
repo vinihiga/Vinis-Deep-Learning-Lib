@@ -114,8 +114,7 @@ class NeuralNetwork:
 
     def backpropagate(self, y_real, y_predicted, learning_rate = 0.001):
         for layer_index in reversed(range(len(self.layers))):
-            #errors = []
-            
+
             # Imagining the following Neural Network
             # 
             # Input_1 -> H_1 -> Out_1
@@ -134,9 +133,8 @@ class NeuralNetwork:
                         derivative_activation = neuron.derivative_function(neuron.output)
                         derivative_linear_function = neuron.input[weight_index] #np.sum(neuron.input)
                         delta = derivative_error * derivative_activation * derivative_linear_function
-                        neuron.delta[weight_index] = delta
+                        neuron.delta[weight_index] = derivative_error * derivative_activation # Output layer is different from hidden layer
                         neuron.weights[weight_index] -= learning_rate * delta
-                        #errors.append(delta)
             else: # We are on the hidden layer
                 for neuron_index in range(len(self.layers[layer_index])):
                     neuron = self.layers[layer_index][neuron_index]
@@ -154,15 +152,6 @@ class NeuralNetwork:
                         delta = derivative_errors * derivative_activation * derivative_linear_function
                         neuron.delta = delta
                         neuron.weights[weight_index] -= learning_rate * delta
-                        #errors.append(delta)
-
-            # amount_neurons = len(self.layers[layer_index]) if layer_index != (len(self.layers) - 1) else len(y_real)
-            # for neuron_index in range(amount_neurons):
-            #     neuron = self.layers[layer_index][neuron_index]
-            #     neuron.delta = errors[neuron_index]
-                
-            #     for weight_index in range(len(neuron.weights)):
-            #         neuron.weights[weight_index] -= learning_rate * errors[neuron_index]
 
     def save(self):
         data = {
@@ -247,6 +236,7 @@ class NeuralNetwork:
                     amount_of_correct += 1
 
             if verbose == True and (epoch + 1) % 10 == 0:
+                avg_error = avg_error / training_data_X_len
                 print("[TRAINING][EPOCH {0}] Error: {1}    Accuracy: {2}".format(epoch + 1, avg_error, amount_of_correct / training_data_X_len))
 
 if __name__ == '__main__':
@@ -259,9 +249,9 @@ if __name__ == '__main__':
     training_data_y = [[1], [0], [0], [1]]
 
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]))
-    neural_network.add_layer(width=2, activation_function="relu")
+    neural_network.add_layer(width=2, activation_function="sigmoid")
     neural_network.add_layer(width=len(training_data_y[0]), activation_function="sigmoid")
-    neural_network.train(num_epochs=100000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
+    neural_network.train(num_epochs=1000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.001, verbose=True)
     neural_network.save()
 
     #neural_network = NeuralNetwork.load("./checkpoint.json", input_size=len(training_data_X[0]))

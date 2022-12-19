@@ -52,6 +52,9 @@ class NeuralNetwork:
         self.input_size = input_size
         self.layers = []
 
+    def print_num_of_connections(self, layer_index: int):
+        print("[STATUS] Num. of connections in layer {0}: {1}".format(layer_index, self.layers[layer_index][0].num_connections))
+
     def add_layer(self, width: int, activation_function: str):
         num_previous_nodes = self.input_size
         neurons_to_create = width
@@ -151,7 +154,7 @@ class NeuralNetwork:
                         derivative_activation = neuron.derivative_function(neuron.output)
                         derivative_linear_function = neuron.input[weight_index]
                         delta = derivative_errors * derivative_activation * derivative_linear_function
-                        neuron.delta = delta
+                        neuron.delta[weight_index] = delta
                         neuron.weights[weight_index] = neuron.weights[weight_index] - (learning_rate * delta)
 
                         #print("[STATUS] Updated weight {0},{1} from {2} to {3}".format(layer_index, weight_index, previous_weight, neuron.weights[weight_index]))
@@ -253,9 +256,9 @@ if __name__ == '__main__':
     training_data_y = [[1], [0], [0], [1]]
 
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]))
-    neural_network.add_layer(width=2, activation_function="sigmoid")
+    neural_network.add_layer(width=2, activation_function="relu")
     neural_network.add_layer(width=len(training_data_y[0]), activation_function="sigmoid")
-    neural_network.train(num_epochs=10000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.3, verbose=True)
+    neural_network.train(num_epochs=50000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.3, verbose=True)
     #neural_network.save()
 
     #neural_network = NeuralNetwork.load("./checkpoint.json", input_size=len(training_data_X[0]))

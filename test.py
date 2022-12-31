@@ -21,9 +21,9 @@ neural_network = NeuralNetwork(input_size=len(x_train[0]))
 neural_network.add_layer(width=32, activation_function="sigmoid")
 neural_network.add_layer(width=16, activation_function="sigmoid")
 neural_network.add_layer(width=8, activation_function="sigmoid")
-neural_network.add_layer(width=4, activation_function="sigmoid")
+neural_network.add_layer(width=3, activation_function="sigmoid")
 
-neural_network.train(num_epochs=1000, training_data_X=X, training_data_y=y, learning_rate=0.01, verbose=True)
+neural_network.train(num_epochs=1000, training_data_X=X, training_data_y=y, loss_fn="CROSS-ENTROPY", learning_rate=0.01, verbose=True)
 
 # import tensorflow as tf
 # from tensorflow.keras.models import Sequential

@@ -28,7 +28,7 @@ class Neuron:
         self.output = 0.0 # This is also used for calculating the error
         self.input = 0.0 # This is also used for calculating the error
 
-        self.weights = self.__weight_initialization__(should_use_he_init = False)
+        self.weights = self.__weight_initialization__(should_use_he_init = True)
         self.bias = np.zeros(1)
 
     def activate(self, x: np.matrix) -> np.matrix:
@@ -116,7 +116,11 @@ class NeuralNetwork:
 
         return result
 
-    def backpropagate(self, y_real, y_predicted, learning_rate = 0.001):
+    def backpropagate(self, y_real, loss_fn, y_predicted, learning_rate = 0.001):
+
+        if loss_fn == None or loss_fn == "":
+            raise Exception("No Loss Fn was found")
+
         for layer_index in reversed(range(len(self.layers))):
 
             if layer_index == len(self.layers) - 1: # We are on the output layer
@@ -125,9 +129,18 @@ class NeuralNetwork:
 
                     for weight_index in range(len(neuron.weights)):
                         # dE/dW2 = dE/dO * dO/dZ * dZ/dW2
-                        previous_weight = neuron.weights[weight_index]
 
-                        derivative_error = -(y_real[neuron_index] - y_predicted[neuron_index])
+                        derivative_error = 0
+
+                        if loss_fn == "MSE":
+                            derivative_error = -(y_real[neuron_index] - y_predicted[neuron_index])
+                        elif loss_fn == "CROSS-ENTROPY":
+                            y_predicted_instance = y_predicted[neuron_index]
+                            if y_predicted_instance == 0:
+                                y_predicted_instance = 0.0000000001
+
+                            derivative_error = -(y_real[neuron_index] / y_predicted_instance)
+
                         derivative_activation = neuron.derivative_function(neuron.output)
                         derivative_linear_function = neuron.input[weight_index]
                         delta = derivative_error * derivative_activation * derivative_linear_function
@@ -142,14 +155,12 @@ class NeuralNetwork:
 
                     for weight_index in range(len(neuron.weights)):
                         # dE / dW1 = previous(dE / dO * dO/dZ) * current(dO/dZ * dZ/dW1)
-                        previous_weight = neuron.weights[weight_index]
                         derivative_errors = 0
 
                         # Getting the deltas from parents
                         for parent_index in range(len(self.layers[layer_index + 1])):
                             derivative_errors += self.layers[layer_index + 1][parent_index].delta[neuron_index]
                             #print("[STATUS] Current derivative errors from parent {0},{1} : {2}".format(layer_index + 1, parent_index, derivative_errors))
-
 
                         derivative_activation = neuron.derivative_function(neuron.output)
                         derivative_linear_function = neuron.input[weight_index]
@@ -218,7 +229,13 @@ class NeuralNetwork:
         
         return neural_network
 
-    def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001, verbose = True):
+    def train(self, num_epochs: int, training_data_X, training_data_y, learning_rate = 0.001, loss_fn: str = "", verbose = True):
+
+        loss_fn = loss_fn.upper()
+
+        if loss_fn not in ["CROSS-ENTROPY", "MSE"]:
+            raise Exception("No Loss Function found")
+
         for epoch in range(num_epochs):
 
             # Variables
@@ -228,12 +245,18 @@ class NeuralNetwork:
 
             for data_index in range(training_data_X_len):
                 Z = self.predict(training_data_X[data_index])
-                self.backpropagate(training_data_y[data_index], Z, learning_rate)
+                self.backpropagate(training_data_y[data_index], loss_fn, Z, learning_rate)
 
-                # TODO: Change loss functions... Allow the user to select
+                # Calculating the loss
                 for output_index in range(len(Z)):
-                    abs_error = training_data_y[data_index][output_index] - Z[output_index]
-                    avg_error += pow(abs_error, 2)
+                    y_predicted = training_data_y[data_index][output_index]
+                    if loss_fn == "MSE":
+                        abs_error = y_predicted - Z[output_index]
+                        avg_error += pow(abs_error, 2)
+                    elif loss_fn == "CROSS-ENTROPY":
+                        if y_predicted == 0:
+                            y_predicted =  0.0000000001
+                        avg_error += Z[output_index] * math.log2(y_predicted)
 
                 # Accuracy - for debugging purposes
                 for Z_index in range(len(Z)):
@@ -243,7 +266,11 @@ class NeuralNetwork:
                     amount_of_correct += 1
 
             if verbose == True and (epoch + 1) % 100 == 0:
-                avg_error = avg_error / training_data_X_len
+                if loss_fn == "MSE":
+                    avg_error = avg_error / training_data_X_len
+                elif loss_fn == "CROSS-ENTROPY":
+                    avg_error = -avg_error
+
                 print("[TRAINING][EPOCH {0}] Error: {1}    Accuracy: {2}".format(epoch + 1, avg_error, amount_of_correct / training_data_X_len))
 
 if __name__ == '__main__':
@@ -258,7 +285,7 @@ if __name__ == '__main__':
     neural_network = NeuralNetwork(input_size=len(training_data_X[0]))
     neural_network.add_layer(width=2, activation_function="relu")
     neural_network.add_layer(width=len(training_data_y[0]), activation_function="sigmoid")
-    neural_network.train(num_epochs=50000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.3, verbose=True)
+    neural_network.train(num_epochs=50000, training_data_X=training_data_X, training_data_y=training_data_y, learning_rate=0.3, loss_fn="CROSS-ENTROPY", verbose=True)
     #neural_network.save()
 
     #neural_network = NeuralNetwork.load("./checkpoint.json", input_size=len(training_data_X[0]))
